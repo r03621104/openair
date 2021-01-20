@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國家年度變化</title>
+    <!-- zoom -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script> 
+    
+    <!-- Load d3.js -->
+    <script src="http://d3js.org/d3.v4.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+    <script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
+     
+    <style>
+      .mapsvg {
+        background-color: #d6e9fd;
+        font-family: Verdana, sans-serif;
+      }
+
+    </style>
+
+</head>
+<body>
+    <!-- Create an element where the map will take place -->
+    <svg id="my_dataviz" width="1720" height="800"></svg>
+
+    <script>
+
+        // The svg
+        var svg = d3.select("svg").attr("class", "mapsvg"),
+          width = svg.attr("width"),
+          height = svg.attr("height");
+        
+        // Map and projection
+        var path = d3.geoPath();
+        var projection = d3.geoNaturalEarth()
+          .scale(320)
+          .center([-55,35])
+          .translate([width / 3, height / 3]);
+        
+        var g = svg.append("g");
+        
+        // Data 
+        var data = d3.map();
+        // Color scale
+        var colorScale = d3.scaleThreshold()  // 會按照給定的門檻去做比例尺換算
+          .domain([-2, -0.75, -0.5, 0, 0.5, 1]) 
+          .range(d3.schemeGreens[7])// 分成7組，schemePuRd
+
+        
+        // Add legend
+        svg.append("g")
+            .attr("class", "legendQuant")
+            .attr("transform", "translate(40,"+(height-200)+")");
+
+        var legend = d3.legendColor()
+            .labelFormat(d3.format(".2f"))
+            .labels(d3.legendHelpers.thresholdLabels)
+            .scale(colorScale)
+            
+        svg.select(".legendQuant")
+            .call(legend);
+
+        
+        
+        // Load external data and boot
+        d3.queue()
+          .defer(d3.json, "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
+          .defer(d3.csv, "./data/ratio.csv", function(d) { data.set(d.code, d.ratio); }) // csv的d.code欄可以對照到geojson裡的id。d3.map.set(key,value)設定某個key的值，但置換後並不會影響到原本的值
+          .await(ready);
+
+        
+        console.log(data)
+        
+        function ready(error, topo) {
+            console.log(topo)
+        
+            // 動畫
+            let mouseOver = function(d) {
+              d3.selectAll(".Country")
+                .style("opacity", .5)
+              d3.select(this) // this指向各國家
+                .transition()
+                .duration(100)
+                .style("opacity", 1)
+                .style("stroke", "black")
+                .style("stroke-width", 2)
+            }
+          
+            let mouseLeave = function(d) {
+              d3.selectAll(".Country")
+                .style("opacity", .5)
+              d3.select(this)
+                .transition()
+                .duration(100)
+                .style("stroke", "white")  // 透明"transparent"
+                .style("stroke-width", 1)
+            }
+          
+            // Draw the map
+            g.selectAll("path")
+                .data(topo.features) // geojson
+                .enter()
+                .append("path")
+                // Draw each country
+                .attr("d", d3.geoPath()
+                  .projection(projection)
+                )   
+                // Set the color of each country
+                .attr("fill", function (d) {
+                  d.total = data.get(d.id) || 0;  // or=>||，取geojson的id欄的值(d3.map.get() returns the value for the specified key string.)，剛好對照到csv檔的d.code值
+                  return colorScale(d.total);
+                })
+                .style("stroke", "white") // 原本樣式
+                .attr("class", "Country")
+                .style("opacity", .5) // 原本樣式
+                .on("mouseover", mouseOver )
+                .on("mouseleave", mouseLeave )
+
+            }
+
+            // zoom
+            var zoom = d3.behavior.zoom()
+              .on("zoom",function() {
+                g.attr("transform","translate("+ 
+                    d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+                g.selectAll("path")  
+                    .attr("d", path.projection(projection));     
+                });
+            
+            svg.call(zoom)
+        
+        </script>
+    
+</body>
+</html>
