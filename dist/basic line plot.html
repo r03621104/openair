@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Several group</title>
+
+    <meta charset="utf-8">
+
+    <!-- Load d3.js -->
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+
+
+</head>
+<style>
+  .tooltip{
+    fill: white;
+    stroke: black;
+  }
+
+  .tooltip-country, .tooltip-year, .tooltip-flights{
+    font-weight: bold;
+  }
+
+</style>
+<body>
+
+    <!-- Create a div where the graph will take place -->
+    <div id="my_dataviz"></div> 
+    <svg id="my_dataviz1" height=300 width=450></svg>
+
+    <script>
+
+        // set the dimensions and margins of the graph
+        var margin = {top: 10, right: 30, bottom: 50, left: 60},
+            width = 600,
+            height = 460;
+            // width = 600 - margin.left - margin.right,
+            // height = 600 - margin.top - margin.bottom;
+
+        // append the svg object to the body of the page
+        var svg = d3.select("#my_dataviz")
+          .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform",
+                  "translate(" + margin.left + "," + margin.top + ")");
+
+        var svg1 = d3.select("#my_dataviz")
+          .append("svg")
+            .attr("width", 450)
+            .attr("height", 500)
+
+
+        //Read the data
+        d3.csv("./data/mini_2019_table.csv", function(data) {
+        
+        // group the data: I want to draw one line per group
+        var sumstat = d3.nest() // nest function allows to group the calculation per level of a factor
+            .key(function(d) { return d.country + " " + d.year;})
+            .entries(data);
+        console.log(sumstat)
+            
+        // Add X axis --> it is a date format
+        var x = d3.scaleLinear()
+          .domain([ 1, 13 ])
+          .range([ 0, width+margin.left]);
+        svg.append("g")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(x));
+        
+        // Add Y axis
+        var y = d3.scaleLinear()
+            .domain([0, d3.max(data, function(d) { return d.value; })])
+            .range([ height, 0 ]);
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        // Add X axis label:
+        svg.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", width)
+            .attr("y", height + margin.top + 30)
+            .text("Month");
+
+        // Y axis label:
+        svg.append("text")
+            .attr("text-anchor", "end")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -margin.left+20)
+            .attr("x", -margin.top)
+            .text("Flights")
+        
+
+      // color palette
+      var res = sumstat.map(function(d){ return d.key }) // list of group names，陣列轉換成物件形態
+      // console.log(res)
+      var myColor = d3.scaleOrdinal()
+          .domain(res)
+          .range(['#e41a1c','#377eb8','#4daf4a','#984ea3'])
+          
+        // // This allows to find the closest X index of the mouse:
+        // var bisect = d3.bisector(function(d) { return d.x; }).left;
+          
+          
+        // // Create the circle that travels along the curve of chart
+        // var focus = svg.append("g")
+        //       .append("circle")
+        //       .style("fill", "none")
+        //       .attr("stroke", "black")
+        //       .attr('r', 5.5)
+        //       .style("opacity", 0)
+
+        // // Create the text that travels along the curve of chart
+        //  var focusText = svg
+        //       .append('g')
+        //       .append('text')
+        //       .style("opacity", 0)
+        //       .attr("text-anchor", "left")
+        //       .attr("alignment-baseline", "middle")
+          
+        // Draw the line
+        svg.selectAll(".line")
+            .data(sumstat)
+            .enter()
+            .append("path")
+               .attr("fill", "none")
+               .attr("stroke", function(d){ return myColor(d.key) })
+               .attr("stroke-width", 1.5)
+               .attr("d", function(d){
+                return d3.line()
+                   .x(function(d) { return x(d.month); })  // 座標x
+                   .y(function(d) { return y(d.value); })  // 座標y
+                   (d.values)
+               })
+
+        // // Create a rect on top of the svg area: this rectangle recovers mouse position
+        // svg
+        //   .append('rect')
+        //    .style("fill", "none")
+        //   .style("pointer-events", "all")
+        //   .attr('width', width)
+        //   .attr('height', height)
+        //   .on('mouseover', mouseover)
+        //   .on('mousemove', mousemove)
+        //   .on('mouseout', mouseout);
+        // // What happens when the mouse move -> show the annotations at the right positions.
+        // function mouseover() {
+        //       focus.style("opacity", 1)
+        //       focusText.style("opacity",1)
+        //       }
+
+        // function mousemove() {
+        //   // recover coordinate we need
+        //   var x0 = x.invert(d3.mouse(this)[0]);
+        //   var i = bisect(data, x0, 1);
+        //    selectedData = data[i]
+        //   focus
+        //     .attr("cx", x(selectedData.x))
+        //     .attr("cy", y(selectedData.y))
+        //   focusText
+        //     .html("x:" + selectedData.x + "  -  " + "y:" + selectedData.y)
+        //     .attr("x", x(selectedData.x)+15)
+        //     .attr("y", y(selectedData.y))
+        //   }
+        // function mouseout() {
+        //   focus.style("opacity", 0)
+        //   focusText.style("opacity", 0)
+        //   }
+      
+        // // Handmade legend
+        
+        // svg1.append("circle").attr("cx",10).attr("cy",20).attr("r", 6).style("fill", '#e41a1c')
+        // svg1.append("circle").attr("cx",10).attr("cy",50).attr("r", 6).style("fill", '#377eb8')
+        // svg1.append("circle").attr("cx",10).attr("cy",80).attr("r", 6).style("fill", '#4daf4a')
+        // svg1.append("circle").attr("cx",10).attr("cy",110).attr("r", 6).style("fill", '#984ea3')
+        // svg1.append("text").attr("x", 30).attr("y", 20).text("2019 US").style("font-size", "15px").attr("alignment-baseline","middle")
+        // svg1.append("text").attr("x", 30).attr("y", 50).text("2019 EU").style("font-size", "15px").attr("alignment-baseline","middle")
+        // svg1.append("text").attr("x", 30).attr("y", 80).text("2020 US").style("font-size", "15px").attr("alignment-baseline","middle")
+        // svg1.append("text").attr("x", 30).attr("y", 110).text("2020 EU").style("font-size", "15px").attr("alignment-baseline","middle")
+        
+              
+        // legend
+        // create a list of keys
+        // var keys = ["US 2019", "US 2020", "EU 2019", "EU 2020"]
+
+        // Usually you have a color scale in your chart already
+        // var myColor = d3.scaleOrdinal()
+        //   .domain(res)
+        //   .range(['#e41a1c','#377eb8','#4daf4a','#984ea3'])
+
+        // Add one dot in the legend for each name.
+        svg1.selectAll("mydots")
+          .data(sumstat)
+          .enter()
+          .append("circle")
+            .attr("cx", 10)
+            .attr("cy", function(d,i){return 20 + i*30}) // 20 is where the first dot appears. 30 is the distance between dots
+            .attr("r", 5)
+            .style("fill", function(d){ return myColor(d.key)})
+
+        // Add one dot in the legend for each name.
+        svg1.selectAll("mylabels")
+          .data(res)
+          .enter()
+          .append("text")
+            .attr("x", 20)
+            .attr("y", function(d,i){return 20 + i*30}) // 20 is where the first dot appears. 30 is the distance between dots
+            .style("fill", "black")
+            .style("font-size", "14px")
+            .text(function(d){ return d})
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
+          })
+        </script>
+        
+
+</body>
+</html>

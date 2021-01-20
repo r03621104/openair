@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Dashboard</title>
+        <link href="css/styles.css" rel="stylesheet" />
+        <link href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css" rel="stylesheet" crossorigin="anonymous" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js" crossorigin="anonymous"></script>
+        <!-- Load d3.js and the geo projection plugin -->
+        <script src="https://d3js.org/d3.v4.js"></script>
+        <script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+        <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+        <link rel="stylesheet" href="https://yui-s.yahooapis.com/pure/0.5.0/pure-min.css">
+        <link rel="stylesheet" href="https://rawgit.com/tpreusse/radar-chart-d3/master/src/radar-chart.css"> 
+        <script src="https://rawgit.com/tpreusse/radar-chart-d3/master/src/radar-chart.js"></script>
+        <script>
+            // 調整RadarChart套件裡的設定
+            RadarChart.defaultConfig.color = function() {};
+            RadarChart.defaultConfig.radius = 3;
+            RadarChart.defaultConfig.w = 400;
+            RadarChart.defaultConfig.h = 400;
+        </script>
+    </head>
+    <body class="sb-nav-fixed">
+        <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+            <a class="navbar-brand" href="index.html">小心疫翼</a>
+            <button class="btn btn-link btn-sm order-1 order-lg-0" id="sidebarToggle" href="#"><i class="fas fa-bars"></i></button>
+            
+        </nav>
+        <div id="layoutSidenav">
+            <div id="layoutSidenav_nav">
+                <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+                    <div class="sb-sidenav-menu">
+                        <div class="nav">
+                            <div class="sb-sidenav-menu-heading">Core</div>
+                            <a class="nav-link" href="index.html">
+                                <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                Dashboard
+                            </a>
+                            <div class="sb-sidenav-menu-heading">Interface</div>
+                            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseLayouts" aria-expanded="false" aria-controls="collapseLayouts">
+                                <div class="sb-nav-link-icon"><i class="fas fa-columns"></i></div>
+                                Charts
+                                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                            </a>
+                            <div class="collapse" id="collapseLayouts" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
+                                <nav class="sb-sidenav-menu-nested nav">
+                                    <a class="nav-link" href="bubblemap.html">Bubble Map</a>
+                                    <a class="nav-link" href="radar-chart.html">Radar Chart</a>
+                                    <a class="nav-link" href="heat-map.html">Heat Map</a>
+                                    <a class="nav-link" href="barplot.html">Barplot</a>
+                                    <a class="nav-link" href="basic line plot.html">Line Plot</a>
+                                    <a class="nav-link" href="choro.html">Choropleth</a>
+
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+            <div id="layoutSidenav_content">
+                <main>
+                    <div class="container-fluid">
+                        <h1 class="mt-4">Dashboard</h1>
+                        <ol class="breadcrumb mb-4">
+                            <li class="breadcrumb-item active">Dashboard</li>
+                        </ol>
+                        <div class="row">
+                        </div>
+                        <div class="row">
+                            <div class="col-xl-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-area mr-1"></i>
+                                        Bubble Map
+                                    </div>
+                                    <!-- Insert charts -->
+                                    <!-- Create an element where the map will take place -->
+                                    <svg id="my_dataviz" width="650" height="450"></svg>
+
+                                    <!-- Button --><!-- Button的value要對照到我們分的group -->
+                                    <div>
+                                    <input type="checkbox" class="checkbox" value="A" checked><label>group A</label> 
+                                    <input type="checkbox" class="checkbox" value="B" checked><label>group B</label>
+                                    <input type="checkbox" class="checkbox" value="C" checked><label>group C</label>
+                                    <input type="checkbox" class="checkbox" value="D" checked><label>group D</label>
+                                    </div>
+                                    <br>
+                                    <!-- <div><a href="../charts.html">Back to chart</a></div> -->
+                                    <script type="text/javascript">
+
+                                        // The svg
+                                        var svg = d3.select("svg"),
+                                            width = svg.attr("width"),
+                                            height = svg.attr("height");
+                                    
+                                        // Map and projection
+                                        var projection = d3.geoNaturalEarth()  // 投影方法，可以換成其他投影方法，例如: geoMercator() / d3.geoAiry()...
+                                            // .center([2, 47])                // GPS of location to zoom on，決定地圖中心點的座標，之後放大縮小也是以此為中心點
+                                            .scale(width / 1.6 / Math.PI)      // This is like the zoom，縮放倍數
+                                            .translate([ width/2, height/2.2])
+                                    
+                                        
+                                        // Load external data and boot，載入D3附的geojson檔畫地圖
+                                        d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson", function(data){
+                                        
+                                            // Draw the map
+                                            svg.append("g")
+                                            .selectAll("path")
+                                            .data(data.features)
+                                            .enter()
+                                            .append("path")
+                                              .attr("fill", "#BEBEBE")
+                                              .attr("d", d3.geoPath()
+                                                  .projection(projection)
+                                              )
+                                            .style("stroke", "black")
+                                            .style("opacity", .3)
+                                    
+                                        })
+                                    
+                                    
+                                        // Create data for circles，載入圈圈需要的資料，機場資料放這
+                                        d3.csv("./data/mini_2019_table_bubble.csv", function(error,data){
+                                            // console.log(data)
+                                        
+                                            var markers = []
+                                            data.forEach(function(row){
+                                              topush = {long: Number(row.longitude),
+                                                        lat: Number(row.latitude),
+                                                        size: Number(row.long_destination),
+                                                        group: row.group}
+                                              markers.push(topush)
+                                            })
+                                            console.log(markers);
+                                    
+                                            // Create a color scale
+                                            var color = d3.scaleOrdinal()
+                                                .domain(["A", "B", "C" , "D"])
+                                                .range([ "#0066CC", "#402D54", "#D18975", "#8FD175"])
+                                    
+                                            // Add a scale for bubble size
+                                            var size = d3.scaleLinear()
+                                              .domain([1,1000])  
+                                              .range([ 4, 50])  
+                                            
+                                            
+                                            // Add circles:
+                                            svg
+                                              .selectAll("myCircles")
+                                              .data(markers)
+                                              .enter()
+                                              .append("circle")
+                                                .attr("class", function(d){ return d.group }) // 替圈圈加上A,B,C,D四個class
+                                                .attr("cx", function(d){ return projection([d.long, d.lat])[0] })
+                                                .attr("cy", function(d){ return projection([d.long, d.lat])[1] })
+                                                .attr("r", function(d){ return size(d.size) })          
+                                                .style("fill", function(d){ return color(d.group) })    
+                                                .attr("stroke", function(d){ return color(d.group) })   
+                                                .attr("stroke-width", 1)
+                                                .attr("fill-opacity", .4)
+                                    
+                                    
+                                            // 觸發勾選行為動作的函數，This function is gonna change the opacity and size of selected and unselected circles
+                                            function update(){
+                                            
+                                              // For each check box:
+                                              d3.selectAll(".checkbox").each(function(d){
+                                                cb = d3.select(this); // select class=checkbox
+                                                grp = cb.property("value") // 
+                                              
+                                                // If the box is check, I show the group
+                                                if(cb.property("checked")){
+                                                  svg.selectAll("."+grp).transition().duration(1000).style("opacity", 1).attr("r", function(d){ return size(d.size) })
+                                                
+                                                // Otherwise I hide it
+                                                }else{
+                                                  svg.selectAll("."+grp).transition().duration(1000).style("opacity", 0).attr("r", 0)
+                                                }
+                                              })
+                                            }
+                                    
+                                            // When a button change, I run the update function
+                                            d3.selectAll(".checkbox").on("change",update);
+                                    
+                                            // And I initialize it at the beginning，執行動作
+                                            update()
+                                        
+                                          })
+                                        
+                                        </script>
+                                    <!-- <img src='./map.PNG'></img> -->
+                                </div>
+                            </div>
+                            <div class="col-xl-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-bar mr-1"></i>
+                                        Radar Chart
+                                    </div>
+                                    <!-- Insert charts -->
+                                    <script>
+                                        // 匯入資料
+                                        var data = [
+                                          {
+                                            className: 'groupA', 
+                                            axes: [
+                                              {axis: "long", value: 168}, 
+                                              {axis: "medium", value: 16}, 
+                                              {axis: "short", value: 77},  
+                                              {axis: "latitude", value: 25.273056},  
+                                              {axis: "longitude", value: 51.608056}
+                                            ]
+                                          },
+                                          {
+                                            className: 'groupB',
+                                            axes: [
+                                              {axis: "long", value: 51}, 
+                                              {axis: "medium", value: 13}, 
+                                              {axis: "short", value: 3},  
+                                              {axis: "latitude", value: 38.9445},  
+                                              {axis: "longitude", value: -77.455803}
+                                            ]
+                                          },
+                                          {
+                                            className: 'groupC',
+                                            axes: [
+                                              {axis: "long", value: 12}, 
+                                              {axis: "medium", value: 1}, 
+                                              {axis: "short", value: 20},  
+                                              {axis: "latitude", value: 51.874698638916},  
+                                              {axis: "longitude", value: -0.368333011865616}
+                                            ]            
+                                          }
+                                        ];
+                                      
+                                        // 有兩種寫法
+                                      
+                                        // 方法一
+                                        var chart = RadarChart.chart();  // 使用的套件就有RadarChart這個變數，.chart()應該是選取圖表
+                                        var cfg = chart.config(); // retrieve default config
+                                        var svg = d3.select('body').append('svg')
+                                          .attr('width', cfg.w + cfg.w + 50) // 原cfg.w(weight) = 600
+                                          .attr('height', cfg.h + cfg.h / 4); // 原cfg.h(height) = 600
+                                      
+                                        // 建立一個radar
+                                        svg.append('g').classed('single', 1).datum(data).call(chart); //datum綁定單一的資料,data綁定一組資料
+                                      
+                                        // 方法二
+                                        // RadarChart.draw(".chart-container", data);
+                                        
+                                    </script>
+                                    <!-- <img src='./radar.PNG'></img> -->
+                                </div>
+                            </div>
+                            <div class="col-xl-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-bar mr-1"></i>
+                                        Heat Map
+                                    </div>
+                                    <!-- Insert charts -->
+                                    <!-- <img src='./heatmap.PNG'></img> -->
+                                </div>
+                            </div>
+                            <div class="col-xl-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-bar mr-1"></i>
+                                        Barplot
+                                    </div>
+                                    <!-- Insert charts -->
+                                    <!-- <img src='./sankey.PNG'></img> -->
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </main>
+                <footer class="py-4 bg-light mt-auto">
+                    <div class="container-fluid">
+                        <div class="d-flex align-items-center justify-content-between small">
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+        <script src="js/scripts.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
+        <script src="assets/demo/chart-area-demo.js"></script>
+        <script src="assets/demo/chart-bar-demo.js"></script>
+        <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js" crossorigin="anonymous"></script>
+        <script src="assets/demo/datatables-demo.js"></script>
+    </body>
+</html>
